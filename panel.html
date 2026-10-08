@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پنل مدیریت</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Tahoma,sans-serif; }
+body { background:#000; color:#fff; padding:20px; }
+.box { max-width:600px; margin:0 auto; background:#0a0a0a; border:1px solid #222; padding:25px; }
+h1 { text-align:center; font-size:22px; letter-spacing:3px; margin-bottom:20px; }
+h1 span { color:#0f0; }
+input, textarea, select { width:100%; padding:12px; background:#111; border:1px solid #333; color:#fff; font-size:14px; margin-bottom:10px; font-family:Tahoma; }
+input:focus, textarea:focus, select:focus { outline:none; border-color:#0f0; }
+button { padding:12px 20px; background:#fff; color:#000; border:none; font-size:14px; font-weight:bold; cursor:pointer; margin:5px 0; }
+button:hover { background:#0f0; }
+button.danger { background:#f00; color:#fff; }
+.section { border-top:1px solid #222; padding-top:20px; margin-top:20px; }
+.section h2 { font-size:14px; color:#0f0; margin-bottom:15px; letter-spacing:2px; }
+.q-item { background:#111; padding:12px; margin-bottom:8px; border-right:3px solid #0f0; font-size:13px; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.q-item button { padding:6px 12px; font-size:12px; }
+.msg { text-align:center; padding:10px; margin:10px 0; font-size:13px; }
+.ok { color:#0f0; }
+.err { color:#f00; }
+.hidden { display:none; }
+label { font-size:12px; color:#888; display:block; margin-bottom:3px; }
+.code-area { background:#111; color:#0f0; font-family:monospace; font-size:11px; padding:10px; min-height:100px; border:1px solid #333; width:100%; }
+</style>
+</head>
+<body>
+
+<!-- ورود -->
+<div class="box" id="loginBox">
+  <h1>PANEL<span>.</span>ADMIN</h1>
+  <input type="password" id="pass" placeholder="پسورد">
+  <button onclick="login()">ورود</button>
+  <div class="msg" id="loginMsg"></div>
+</div>
+
+<!-- پنل -->
+<div class="box hidden" id="panelBox">
+  <h1>PANEL<span>.</span>ADMIN</h1>
+
+  <div class="section">
+    <h2>📢 اطلاعیه</h2>
+    <textarea id="noticeInput" rows="3" placeholder="متن اطلاعیه..."></textarea>
+    <button onclick="saveNotice()">ذخیره اطلاعیه</button>
+    <div class="msg" id="noticeMsg"></div>
+  </div>
+
+  <div class="section">
+    <h2>🏆 جایزه نفر اول</h2>
+    <input type="text" id="prizeInput" placeholder="متن جایزه...">
+    <button onclick="savePrize()">ذخیره جایزه</button>
+    <div class="msg" id="prizeMsg"></div>
+  </div>
+
+  <div class="section">
+    <h2>➕ افزودن سوال</h2>
+    <input type="text" id="qText" placeholder="متن سوال">
+    <input type="text" id="optA" placeholder="گزینه ۱">
+    <input type="text" id="optB" placeholder="گزینه ۲">
+    <input type="text" id="optC" placeholder="گزینه ۳">
+    <input type="text" id="optD" placeholder="گزینه ۴">
+    <label>گزینه صحیح:</label>
+    <select id="correctOpt">
+      <option value="a">گزینه ۱</option>
+      <option value="b">گزینه ۲</option>
+      <option value="c">گزینه ۳</option>
+      <option value="d">گزینه ۴</option>
+    </select>
+    <button onclick="addQuestion()">افزودن سوال</button>
+    <div class="msg" id="qMsg"></div>
+  </div>
+
+  <div class="section">
+    <h2>📋 لیست سوالات (<span id="qCount">0</span>)</h2>
+    <div id="qList"></div>
+    <button class="danger" onclick="clearAll()">🗑️ حذف همه سوالات</button>
+  </div>
+
+  <div class="section">
+    <h2>📤 خروجی سوالات (برای GitHub)</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:10px">
+      بعد از وارد کردن سوالات، این کد رو کپی کن و تو فایل index.html بخش DEFAULT_QUESTIONS بذار
+    </p>
+    <textarea class="code-area" id="exportArea" readonly></textarea>
+    <button onclick="exportQuestions()">ساخت خروجی</button>
+    <button onclick="copyExport()">کپی</button>
+  </div>
+
+  <div class="section">
+    <h2>👥 شرکت‌کنندگان</h2>
+    <div id="playerList"></div>
+    <button class="danger" onclick="clearPlayers()">🗑️ پاک کردن نتایج</button>
+  </div>
+</div>
+
+<script>
+const ADMIN_PASS = "football2025";
+
+function login() {
+  const p = document.getElementById('pass').value;
+  if (p === ADMIN_PASS) {
+    document.getElementById('loginBox').classList.add('hidden');
+    document.getElementById('panelBox').classList.remove('hidden');
+    loadAll();
+  } else {
+    document.getElementById('loginMsg').className = 'msg err';
+    document.getElementById('loginMsg').textContent = 'پسورد اشتباه';
+  }
+}
+
+function saveNotice() {
+  const n = document.getElementById('noticeInput').value;
+  localStorage.setItem('notice', n);
+  msg('noticeMsg', '✅ ذخیره شد', 'ok');
+}
+
+function savePrize() {
+  const p = document.getElementById('prizeInput').value;
+  localStorage.setItem('prize', p);
+  msg('prizeMsg', '✅ ذخیره شد', 'ok');
+}
+
+function addQuestion() {
+  const q = document.getElementById('qText').value.trim();
+  const a = document.getElementById('optA').value.trim();
+  const b = document.getElementById('optB').value.trim();
+  const c = document.getElementById('optC').value.trim();
+  const d = document.getElementById('optD').value.trim();
+  const correct = document.getElementById('correctOpt').value;
+
+  if (!q || !a || !b || !c || !d) {
+    msg('qMsg', '❌ همه فیلدها رو پر کن', 'err');
+    return;
+  }
+
+  let questions = JSON.parse(localStorage.getItem('questions') || '[]');
+  questions.push({ q, a, b, c, d, correct });
+  localStorage.setItem('questions', JSON.stringify(questions));
+
+  document.getElementById('qText').value = '';
+  document.getElementById('optA').value = '';
+  document.getElementById('optB').value = '';
+  document.getElementById('optC').value = '';
+  document.getElementById('optD').value = '';
+
+  msg('qMsg', '✅ سوال اضافه شد', 'ok');
+  loadQuestions();
+}
+
+function loadQuestions() {
+  const questions = JSON.parse(localStorage.getItem('questions') || '[]');
+  document.getElementById('qCount').textContent = questions.length;
+  const list = document.getElementById('qList');
+  list.innerHTML = '';
+  questions.forEach((q, i) => {
+    const div = document.createElement('div');
+    div.className = 'q-item';
+    div.innerHTML = `<span>${i+1}. ${q.q}</span><button class="danger" onclick="delQ(${i})">حذف</button>`;
+    list.appendChild(div);
+  });
+}
+
+function delQ(i) {
+  let questions = JSON.parse(localStorage.getItem('questions') || '[]');
+  questions.splice(i, 1);
+  localStorage.setItem('questions', JSON.stringify(questions));
+  loadQuestions();
+}
+
+function clearAll() {
+  if (confirm('همه سوالات حذف بشن؟')) {
+    localStorage.removeItem('questions');
+    loadQuestions();
+  }
+}
+
+function exportQuestions() {
+  const questions = JSON.parse(localStorage.getItem('questions') || '[]');
+  const text = 'const DEFAULT_QUESTIONS = ' + JSON.stringify(questions, null, 2) + ';';
+  document.getElementById('exportArea').value = text;
+}
+
+function copyExport() {
+  const t = document.getElementById('exportArea');
+  t.select();
+  document.execCommand('copy');
+  alert('کپی شد!');
+}
+
+function loadPlayers() {
+  const players = JSON.parse(localStorage.getItem('players') || '[]');
+  const list = document.getElementById('playerList');
+  list.innerHTML = '';
+  if (players.length === 0) {
+    list.innerHTML = '<div style="color:#666;font-size:13px">هنوز کسی شرکت نکرده</div>';
+    return;
+  }
+  players.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'q-item';
+    div.innerHTML = `<span>${p.name}</span><span style="color:#0f0">${p.score}</span>`;
+    list.appendChild(div);
+  });
+}
+
+function clearPlayers() {
+  if (confirm('همه نتایج پاک بشن؟')) {
+    localStorage.removeItem('players');
+    loadPlayers();
+  }
+}
+
+function msg(id, text, cls) {
+  const el = document.getElementById(id);
+  el.className = 'msg ' + cls;
+  el.textContent = text;
+  setTimeout(() => { el.textContent = ''; }, 2000);
+}
+
+function loadAll() {
+  loadQuestions();
+  loadPlayers();
+  document.getElementById('noticeInput').value = localStorage.getItem('notice') || '';
+  document.getElementById('prizeInput').value = localStorage.getItem('prize') || '';
+}
+</script>
+</body>
+</html>
