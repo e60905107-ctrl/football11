@@ -1,3 +1,4 @@
+index.html
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -30,11 +31,7 @@ button:hover { background:#0f0; }
 .timer.warn { color:#f00; }
 .opt { width:100%; padding:15px; background:#111; border:1px solid #333; color:#fff; text-align:right; font-size:15px; margin-bottom:10px; cursor:pointer; transition:0.3s; }
 .opt:hover:not(.disabled) { border-color:#0f0; }
-.opt.correct { background:#0f0; color:#000; border-color:#0f0; animation:pulse 0.5s; }
-.opt.wrong { background:#f00; color:#fff; border-color:#f00; animation:shake 0.5s; }
 .opt.disabled { cursor:not-allowed; opacity:0.6; }
-@keyframes pulse { 0%{transform:scale(1)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
-@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
 .score { text-align:center; font-size:64px; color:#0f0; font-weight:bold; margin:20px 0; }
 .rank { text-align:center; font-size:20px; margin-bottom:20px; }
 table { width:100%; border-collapse:collapse; margin-top:20px; }
@@ -92,7 +89,6 @@ const MAX_SCORE = 100;
 
 // ==================== سوالات پیش‌فرض (اینجا سوالاتت رو وارد کن) ====================
 const DEFAULT_QUESTIONS = [
-  // نمونه - اینا رو حذف کن و سوالات خودت رو بذار
   { q: "تیم ملی فوتبال ایران در جام جهانی ۲۰۲۲ در کدام گروه بود؟", a: "گروه A", b: "گروه B", c: "گروه C", d: "گروه D", correct: "b" },
   { q: "لیونل مسی در سال ۲۰۲۲ توپ طلا را برد؟", a: "بله", b: "خیر", c: "نامعلوم", d: "مشترک", correct: "a" }
 ];
@@ -118,7 +114,6 @@ function startQuiz() {
     return;
   }
   
-  // چک تکراری بودن نام
   let players = JSON.parse(localStorage.getItem('players') || '[]');
   if (players.find(p => p.name === playerName)) {
     msg.className = 'msg err';
@@ -126,14 +121,12 @@ function startQuiz() {
     return;
   }
   
-  // چک اگه قبلاً خارج شده
   if (localStorage.getItem('exited_' + playerName)) {
     msg.className = 'msg err';
     msg.textContent = 'شما قبلاً از آزمون خارج شده‌اید';
     return;
   }
   
-  // بارگذاری سوالات
   let stored = JSON.parse(localStorage.getItem('questions') || '[]');
   questions = stored.length > 0 ? stored : DEFAULT_QUESTIONS;
   
@@ -143,7 +136,6 @@ function startQuiz() {
     return;
   }
   
-  // شافل و انتخاب ۵۰ سوال
   questions = [...questions].sort(() => Math.random() - 0.5).slice(0, TOTAL_QUESTIONS);
   
   document.getElementById('loginScreen').style.display = 'none';
@@ -213,7 +205,7 @@ function updateTimer() {
   t.className = timeLeft <= 4 ? 'timer warn' : 'timer';
 }
 
-// ==================== پاسخ ====================
+// ==================== پاسخ (بدون نمایش جواب درست/غلط) ====================
 function answer(choice, btn) {
   if (answered) return;
   answered = true;
@@ -227,19 +219,15 @@ function answer(choice, btn) {
     b.onclick = null;
   });
   
-  const correctIndex = ['a', 'b', 'c', 'd'].indexOf(q.correct);
-  allBtns[correctIndex].classList.add('correct');
-  
+  // فقط شمارش درست‌ها - بدون نمایش رنگ
   if (choice === q.correct) {
     correctCount++;
-  } else if (choice && btn) {
-    btn.classList.add('wrong');
   }
   
   setTimeout(() => {
     currentQ++;
     showQuestion();
-  }, 1500);
+  }, 800);
 }
 
 // ==================== پایان آزمون ====================
